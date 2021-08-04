@@ -9,13 +9,14 @@ import os
 """
     graph the data from two columns to understand market behaviour.
 """
-def graph_x_and_y_cols(df, option_date, cols, type):
-    name = 'calls' if 'calls' in type else 'puts'
-    plt.plot(df[cols[0]], df[cols[1]])
-    plt.title(f'[{name}] expiring on {option_date}')
-    plt.xlabel(cols[0])
-    plt.ylabel(cols[1])
-    plt.savefig(f'{option_date}-{type}.png')
+def graph_x_and_y_cols(df, OPTION_DATE, COLS, TYPE, PATH):
+    name = 'calls' if 'calls' in TYPE else 'puts'
+    plt.plot(df[COLS[0]], df[COLS[1]])
+    plt.title(f'[{name}] expiring on {OPTION_DATE}')
+    plt.xlabel(COLS[0])
+    plt.ylabel(COLS[1])
+
+    plt.savefig(PATH + '/' + f'{TYPE}.png')
     plt.close()
 
 
@@ -36,16 +37,16 @@ def calculate_vol_for_strike_range(df, BREAKDOWN_RANGE):
 """
     calls other functions to perform operations.
 """
-def option_analysis(option_date, opt, TICKER_NAME, COLUMNS):
+def option_analysis(option_date, opt, TICKER_NAME, COLUMNS, PATH):
     calls = opt.calls
     calls = calls[COLUMNS]
-    graph_x_and_y_cols(calls, option_date, ['strike', 'impliedVolatility'], 'calls-iv')
-    graph_x_and_y_cols(calls, option_date, ['strike', 'volume'], 'calls-volume')
+    graph_x_and_y_cols(calls, option_date, ['strike', 'impliedVolatility'], 'calls-iv', PATH)
+    graph_x_and_y_cols(calls, option_date, ['strike', 'volume'], 'calls-volume', PATH)
 
     puts = opt.puts
     puts = puts[COLUMNS]
-    graph_x_and_y_cols(puts, option_date, ['strike', 'impliedVolatility'], 'puts-iv')
-    graph_x_and_y_cols(puts, option_date, ['strike', 'volume'], 'puts-volume')
+    graph_x_and_y_cols(puts, option_date, ['strike', 'impliedVolatility'], 'puts-iv', PATH)
+    graph_x_and_y_cols(puts, option_date, ['strike', 'volume'], 'puts-volume', PATH)
 
     return {
         'ticker': TICKER_NAME,
@@ -62,6 +63,11 @@ if __name__ == '__main__':
     stock = yf.Ticker(TICKER_NAME)
     option_date = stock.options[0]
     opt = stock.option_chain(option_date)
+
+    # create directory for graph data
+    PATH = f'./graphs/{option_date}'
+    if(not os.path.exists(PATH)):
+        os.mkdir(PATH)
     
-    output = option_analysis(option_date, opt, TICKER_NAME, COLUMNS)
+    output = option_analysis(option_date, opt, TICKER_NAME, COLUMNS, PATH)
     pprint(output)
