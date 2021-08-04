@@ -8,11 +8,12 @@ from itertools import groupby
 """
     helps to understand the market behaviour from volume as strike price changes.
 """
-def graph_strike_over_volume(df, option_date, type):
-    plt.plot(df['strike'], df['volume'])
-    plt.title(f'[{type}] -> {option_date}')
-    plt.xlabel('strike')
-    plt.ylabel('volume')
+def graph_x_and_y_cols(df, option_date, cols, type):
+    name = 'calls' if 'calls' in type else 'puts'
+    plt.plot(df[cols[0]], df[cols[1]])
+    plt.title(f'[{name}] expiring on {option_date}')
+    plt.xlabel(cols[0])
+    plt.ylabel(cols[1])
     plt.savefig(f'{type}.png')
     plt.close()
 
@@ -30,20 +31,27 @@ def calculate_vol_for_strike_range(df):
         
 
 """
-    calls other functions to make graphs.
+    calls other functions to perform operations.
 """
 def option_analysis(TICKER_NAME, COLUMNS):
     stock = yf.Ticker(TICKER_NAME)
     option_date = stock.options[0]
     opt = stock.option_chain(option_date)
-
     calls = opt.calls
     calls = calls[COLUMNS]
-    graph_strike_over_volume(calls, option_date, 'calls')
 
     puts = opt.puts
     puts = puts[COLUMNS]
-    graph_strike_over_volume(puts, option_date, 'puts')
+
+    
+    # the columns to use for graphs
+    cols = ['strike', 'impliedVolatility']
+    graph_x_and_y_cols(calls, option_date, cols, 'calls-iv')
+    graph_x_and_y_cols(puts, option_date, cols, 'puts-iv')
+
+    cols = ['strike', 'volume']
+    graph_x_and_y_cols(calls, option_date, cols, 'calls-volume')
+    graph_x_and_y_cols(puts, option_date, cols, 'puts-volume')
 
     return {
         'ticker': TICKER_NAME,
