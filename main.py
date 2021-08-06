@@ -34,50 +34,77 @@ def calculate_vol_for_strike_range(df, BREAKDOWN_RANGE):
         range[key * BREAKDOWN_RANGE] = int(volume)
 
     return range
-        
+
+
+"""
+    calculate the put to call ratio for many option dates.
+"""
+def get_put_to_call_ratio_of_option_chains(dates, COLUMNS):
+    outer = dict()
+    inner = dict()
+
+    for date in dates:
+        opt = stock.option_chain(date)
+
+        calls = opt.calls
+        calls = calls[COLUMNS]
+
+        puts = opt.puts
+        puts = puts[COLUMNS]
+
+        outer[date] = {
+            'put-to-call-ratio' : (puts['volume'].sum()/calls['volume'].sum()).round(3),
+            'put-volume' : puts['volume'].sum(),
+            'calls-volume': calls['volume'].sum()
+        }
+
+    return outer
 
 """
     calls other functions to perform operations.
 """
-def option_analysis(option_date, opt, TICKER, COLUMNS, PATH):
+def option_analysis(option_dates, opt, TICKER, COLUMNS, PATH):
     calls = opt.calls
     calls = calls[COLUMNS]
-    graph_x_and_y_cols(calls, option_date, ['strike', 'impliedVolatility'], 'calls-iv', PATH, TICKER)
-    graph_x_and_y_cols(calls, option_date, ['strike', 'volume'], 'calls-volume', PATH, TICKER)
+    graph_x_and_y_cols(calls, option_dates[0], ['strike', 'impliedVolatility'], 'calls-iv', PATH, TICKER)
+    graph_x_and_y_cols(calls, option_dates[0], ['strike', 'volume'], 'calls-volume', PATH, TICKER)
 
     puts = opt.puts
     puts = puts[COLUMNS]
-    graph_x_and_y_cols(puts, option_date, ['strike', 'impliedVolatility'], 'puts-iv', PATH, TICKER)
-    graph_x_and_y_cols(puts, option_date, ['strike', 'volume'], 'puts-volume', PATH, TICKER)
+    graph_x_and_y_cols(puts, option_dates[0], ['strike', 'impliedVolatility'], 'puts-iv', PATH, TICKER)
+    graph_x_and_y_cols(puts, option_dates[0], ['strike', 'volume'], 'puts-volume', PATH, TICKER)
 
     return {
         'ticker': TICKER,
         'put-call-vol-ratio': (puts['volume'].sum()/calls['volume'].sum()).round(2),
-        'call-volume-range': calculate_vol_for_strike_range(calls, 5),
-        'put-volume-range': calculate_vol_for_strike_range(puts, 5)
+        'call-volume-range': calculate_vol_for_strike_range(calls, 50),
+        'put-volume-range': calculate_vol_for_strike_range(puts, 50),
+        'pc-vol-ratio(all)': get_put_to_call_ratio_of_option_chains(option_dates, COLUMNS)
     }
 
 
 if __name__ == '__main__':
     COLUMNS = ['strike', 'bid', 'ask', 'volume', 'openInterest','impliedVolatility']
-    TICKERS = ['TSLA', 'SPY', 'QQQ', 'AAPL', 'MSFT', 'AMD']
+    TICKERS = ['QQQ']
 
     for ticker in TICKERS:
         stock = yf.Ticker(ticker)
-        option_date = stock.options[0]
-        opt = stock.option_chain(option_date)
+
+        option_dates = stock.options
+        opt = stock.option_chain(option_dates[0])
 
         # create directory for graph data
         PATH = f'./graphs/{ticker}'
         if(not os.path.exists(PATH)):
             os.mkdir(PATH)
-        PATH = PATH + '/' + option_date
+        PATH = PATH + '/' + option_dates[0]
         if(not os.path.exists(PATH)):
             os.mkdir(PATH)
         
-        data = option_analysis(option_date, opt, ticker, COLUMNS, PATH)
+        data = option_analysis(option_dates, opt, ticker, COLUMNS, PATH)
         pprint(data)
 
+        # save snapshot from option analysis output 
         PATH = PATH + '/' + 'data.json'
         with open(PATH, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
