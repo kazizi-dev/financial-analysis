@@ -1,18 +1,20 @@
 import yfinance as yf
 from pprint import pprint
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 # import seaborn as sns
 from itertools import groupby
 import os
+import json
+
 
 """
     graph the data from two columns to understand market behaviour.
 """
-def graph_x_and_y_cols(df, OPTION_DATE, COLS, TYPE, PATH):
+def graph_x_and_y_cols(df, OPTION_DATE, COLS, TYPE, PATH, TICKER):
     name = 'calls' if 'calls' in TYPE else 'puts'
     plt.plot(df[COLS[0]], df[COLS[1]])
-    plt.title(f'[{name}] expiring on {OPTION_DATE}')
+    plt.title(f'{TICKER} {name} expiring on {OPTION_DATE}')
     plt.xlabel(COLS[0])
     plt.ylabel(COLS[1])
 
@@ -37,37 +39,45 @@ def calculate_vol_for_strike_range(df, BREAKDOWN_RANGE):
 """
     calls other functions to perform operations.
 """
-def option_analysis(option_date, opt, TICKER_NAME, COLUMNS, PATH):
+def option_analysis(option_date, opt, TICKER, COLUMNS, PATH):
     calls = opt.calls
     calls = calls[COLUMNS]
-    graph_x_and_y_cols(calls, option_date, ['strike', 'impliedVolatility'], 'calls-iv', PATH)
-    graph_x_and_y_cols(calls, option_date, ['strike', 'volume'], 'calls-volume', PATH)
+    graph_x_and_y_cols(calls, option_date, ['strike', 'impliedVolatility'], 'calls-iv', PATH, TICKER)
+    graph_x_and_y_cols(calls, option_date, ['strike', 'volume'], 'calls-volume', PATH, TICKER)
 
     puts = opt.puts
     puts = puts[COLUMNS]
-    graph_x_and_y_cols(puts, option_date, ['strike', 'impliedVolatility'], 'puts-iv', PATH)
-    graph_x_and_y_cols(puts, option_date, ['strike', 'volume'], 'puts-volume', PATH)
+    graph_x_and_y_cols(puts, option_date, ['strike', 'impliedVolatility'], 'puts-iv', PATH, TICKER)
+    graph_x_and_y_cols(puts, option_date, ['strike', 'volume'], 'puts-volume', PATH, TICKER)
 
     return {
-        'ticker': TICKER_NAME,
+        'ticker': TICKER,
         'put-call-vol-ratio': (puts['volume'].sum()/calls['volume'].sum()).round(2),
-        'call-volume-range': calculate_vol_for_strike_range(calls, 100),
-        'put-volume-range': calculate_vol_for_strike_range(puts, 100)
+        'call-volume-range': calculate_vol_for_strike_range(calls, 5),
+        'put-volume-range': calculate_vol_for_strike_range(puts, 5)
     }
 
 
 if __name__ == '__main__':
     COLUMNS = ['strike', 'bid', 'ask', 'volume', 'openInterest','impliedVolatility']
-    TICKER_NAME = 'TSLA'
+    TICKERS = ['TSLA', 'SPY', 'QQQ', 'AAPL', 'MSFT', 'AMD']
 
-    stock = yf.Ticker(TICKER_NAME)
-    option_date = stock.options[0]
-    opt = stock.option_chain(option_date)
+    for ticker in TICKERS:
+        stock = yf.Ticker(ticker)
+        option_date = stock.options[0]
+        opt = stock.option_chain(option_date)
 
-    # create directory for graph data
-    PATH = f'./graphs/{option_date}'
-    if(not os.path.exists(PATH)):
-        os.mkdir(PATH)
-    
-    output = option_analysis(option_date, opt, TICKER_NAME, COLUMNS, PATH)
-    pprint(output)
+        # create directory for graph data
+        PATH = f'./graphs/{ticker}'
+        if(not os.path.exists(PATH)):
+            os.mkdir(PATH)
+        PATH = PATH + '/' + option_date
+        if(not os.path.exists(PATH)):
+            os.mkdir(PATH)
+        
+        data = option_analysis(option_date, opt, ticker, COLUMNS, PATH)
+        pprint(data)
+
+        PATH = PATH + '/' + 'data.json'
+        with open(PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)

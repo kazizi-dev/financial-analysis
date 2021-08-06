@@ -1,4 +1,5 @@
-./graphs/*
+*.json
+./graphs/*/*/data.json
 *.png
 
 # Byte-compiled / optimized / DLL files
