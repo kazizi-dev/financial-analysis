@@ -36,6 +36,46 @@ def calculate_vol_for_strike_range(df, BREAKDOWN_RANGE):
     return range
 
 
+"""
+    get user inputs on what information to display or save.
+"""
+def get_user_input():
+    option_dates = []
+
+    print("Enter expiry dates (type 'done' when done): ")
+    user_input = ''
+    while user_input != 'done':
+        user_input = input('> ')
+        
+        if len(user_input) == 0:
+            option_dates.append('all')
+            break
+        elif user_input != 'done':
+            option_dates.append(user_input)
+        
+    print(option_dates)
+
+
+    print("Enter tickers (type 'done' when done): ")
+    tickers = []
+    user_input = ''
+    while user_input != 'done':
+        user_input = input("> ")
+
+        if len(user_input) == 0 and 'SPY' not in tickers:
+            tickers.append('SPY')
+        elif user_input != 'done':
+            option_dates.append(user_input)
+        
+    print(tickers)
+
+    user_input = int(input("Enter volume range (numbers only): "))
+    volume_range = user_input if user_input > 0 else 10
+
+    print(volume_range)
+
+    return option_dates, tickers, volume_range
+
 
 """
     calls other functions to perform operations.
@@ -54,9 +94,11 @@ def option_analysis(option_date, opt, TICKER, COLUMNS, PATH, VOLUME_RANGE):
     return {
         'ticker': TICKER,
         'expiry-date': option_date,
+        'put-vol': puts['volume'].sum(),
+        'call-vol': calls['volume'].sum(),
         'put-call-vol-ratio': (puts['volume'].sum()/calls['volume'].sum()).round(2),
-        'call-vol-range': calculate_vol_for_strike_range(calls, VOLUME_RANGE),
-        'put-vol-range': calculate_vol_for_strike_range(puts, VOLUME_RANGE)
+        # 'call-vol-range': calculate_vol_for_strike_range(calls, VOLUME_RANGE),
+        # 'put-vol-range': calculate_vol_for_strike_range(puts, VOLUME_RANGE)
     }
 
 
@@ -64,18 +106,17 @@ if __name__ == '__main__':
     COLUMNS = ['strike', 'bid', 'ask', 'volume', 'openInterest','impliedVolatility']
 
 
-    ######################### You can modify these #########################
-    TICKERS = ['QQQ', 'SPY']        # add '' around it followed by a comma     
-    VOLUME_RANGE = 100
-    ########################################################################
+    option_dates, tickers, volume_range = get_user_input()
 
-    for ticker in TICKERS:
+    for ticker in tickers:
         print(f"==================================================================")
         print(f"                             {ticker}                             ")
         print(f"==================================================================")
 
         stock = yf.Ticker(ticker)
-        option_dates = stock.options
+
+        if 'all' in option_dates:
+            option_dates = stock.options
 
         for date in option_dates:
             opt = stock.option_chain(date)
@@ -88,10 +129,11 @@ if __name__ == '__main__':
             if(not os.path.exists(PATH)):
                 os.mkdir(PATH)
             
-            data = option_analysis(date, opt, ticker, COLUMNS, PATH, VOLUME_RANGE)
-            pprint(data)
+            data = option_analysis(date, opt, ticker, COLUMNS, PATH, volume_range)
+            # pprint(data)
+            print(data)
 
-            # save snapshot from option analysis output 
-            PATH = PATH + '/' + 'data.json'
-            with open(PATH, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
+            # # save snapshot from option analysis output 
+            # PATH = PATH + '/' + 'data.json'
+            # with open(PATH, 'w', encoding='utf-8') as f:
+            #     json.dump(data, f, ensure_ascii=False, indent=4)
