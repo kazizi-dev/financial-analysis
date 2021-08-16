@@ -65,7 +65,8 @@ def get_user_input():
         if len(user_input) == 0 and 'SPY' not in tickers:
             tickers.append('SPY')
         elif user_input != 'done':
-            option_dates.append(user_input)
+            tickers.append(user_input)
+        
         
     print(tickers)
 
@@ -105,7 +106,7 @@ def option_analysis(option_date, opt, TICKER, COLUMNS, PATH, VOLUME_RANGE):
 if __name__ == '__main__':
     COLUMNS = ['strike', 'bid', 'ask', 'volume', 'openInterest','impliedVolatility']
 
-
+    prev_ticker = ''
     option_dates, tickers, volume_range = get_user_input()
 
     for ticker in tickers:
@@ -115,8 +116,9 @@ if __name__ == '__main__':
 
         stock = yf.Ticker(ticker)
 
-        if 'all' in option_dates:
+        if 'all' in option_dates or prev_ticker != ticker:
             option_dates = stock.options
+            prev_ticker = ticker
 
         for date in option_dates:
             opt = stock.option_chain(date)
