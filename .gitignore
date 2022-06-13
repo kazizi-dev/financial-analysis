@@ -1,5 +1,3 @@
-2022/
-
 *.json
 ./graphs/*/*/data.json
 *.png
