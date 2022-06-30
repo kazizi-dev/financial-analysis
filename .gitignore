@@ -1,3 +1,5 @@
+trade-analysis/config.py
+
 *.json
 ./graphs/*/*/data.json
 *.png
