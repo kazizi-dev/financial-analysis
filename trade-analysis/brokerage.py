@@ -33,5 +33,9 @@ class Brokerage:
 
 broker = Brokerage()
 response = broker.get_historical_data("AAPL", config.START, config.END, 5)
-close = [candle['close'] for candle in response.json()['candles']]
-pprint(close)
+
+if response.status_code == 200:
+	close = [candle['close'] for candle in response.json()['candles']]
+	pprint(close)
+else:
+	print("Response code: ", response.status_code)
