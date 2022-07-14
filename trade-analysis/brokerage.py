@@ -30,6 +30,20 @@ class Brokerage:
 		return response
 
 
+	# retrieve information about the ticker using its id
+	def get_ticker_info(self, id):
+		URL = f"{config.API_SERVER}/v1/symbols/{id}"
+		response = requests.get(
+			URL,
+			headers= {
+				'content-type': 'application/json', 
+				'Authorization': config.TOKEN
+			}
+		)
+
+		return response
+
+
 
 broker = Brokerage()
 response = broker.get_historical_data("AAPL", config.START, config.END, 5)
